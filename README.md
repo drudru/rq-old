@@ -1,7 +1,6 @@
 # RQ
 
-RQ is a **simple** queueing/messaging system for *any* Unix system and can
-process messages in **any language**. It is designed to run on every machine
+RQ is a **simple** reliable queueing/messaging system for *any* Unix system. It can process messages sent to queues in **any computer language** that runs on Unix (scheme, lisp, ruby, bash, etc.) It is designed to run on every machine
 in your distributed system. Think of it as another one of those small, but
 important services (like crond). It uses directories and json text files on the
 Unix filesystem as its database. As a result, it is easy to understand and debug.
