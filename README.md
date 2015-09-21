@@ -4,9 +4,12 @@ RQ is a **simple** queueing/messaging system for *any* Unix system and can
 process messages in **any language**. It is designed to run on every machine
 in your distributed system. Think of it as another one of those small, but
 important services (like crond). It uses directories and json text files on the
-Unix filesystem as its database. It does not use a specialized database. As a
-result, it is easy to understand and debug.
+Unix filesystem as its database. As a result, it is easy to understand and debug.
 
+**Note** - this version of rq is a branch off of brightroll/rq and may
+not be following that branch.
+
+## Concepts 
 Each item in the queue is a **Message**. Messages can be small, but RQ was
 designed for a medium to large granularity. For example, messages could have
 attachments with 100s to 1000s of megabytes. Each message can be processed by
