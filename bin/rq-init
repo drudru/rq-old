@@ -1,4 +1,4 @@
-#!/home/dru/.rvm/rubies/ruby-2.2.1/bin/ruby
+#!/usr/bin/env ruby
 #
 # THIS SCRIPT IS DESIGNED TO BE STARTED BY A
 # DAEMONTOOLS, RUNIT, S6 'run' SCRIPT

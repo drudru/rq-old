@@ -6,7 +6,7 @@ important services (like crond). It uses directories and json text files on the
 Unix filesystem as its database. As a result, it is easy to understand and debug.
 
 **Note** - this version of rq is a branch off of brightroll/rq and may
-not be following that branch.
+not be following that branch. This branch requires Ruby 2.0 and higher.
 
 ## Concepts 
 Each item in the queue is a **Message**. Messages can be small, but RQ was

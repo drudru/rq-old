@@ -1,5 +1,4 @@
 require 'socket'
-require 'json'
 require 'fcntl'
 require 'digest'
 require 'fileutils'
@@ -883,7 +882,8 @@ module RQ
 
       rescue
         msg = nil
-        $log.warn("Bad message in queue: #{basename} [ #{$!} ]")
+        $log.error("Bad message in queue: #{basename} [ #{$!} ]")
+        $log.error("Bad message in queue: #{basename} [ #{$!.backtrace} ]")
       end
 
       return msg
