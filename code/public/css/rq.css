@@ -205,13 +205,6 @@ a:visited {
   text-align: right;
 }
 
-#flash-container {
-  position: absolute;
-  z-index: 10;
-  right: 20px;
-  top: 10px;
-}
-
 .flash {
   font-size: 1.4em;
   font-weight: bold;
