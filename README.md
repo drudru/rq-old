@@ -12,14 +12,13 @@ not be following that branch. This branch requires Ruby 2.0 and higher.
 Each item in the queue is a **Message**. Messages can be small, but RQ was
 designed for a medium to large granularity. For example, messages could have
 attachments with 100s to 1000s of megabytes. Each message can be processed by
-the local machine or relayed reliably to another machine for processing. These
+a local or remote queue. There is a special queue that relays messages reliably to another machine for processing. These
 machines don't have to be in the same data center and in fact can be on another
 continent. When a message is received in a queue, a worker process is started
-to process the message. The worker process is one-to-one with a unix process.
-(some call this a 'forking' model). The code required to implement a worker is
-very small. Also, API is compatible with any language that runs on Unix. While
-a worker is processing a message, you can view a real-time display of logs
-(with ANSI colors) via the browser.
+to ingest the message. The worker process is one-to-one with a unix process.
+(some call this a 'forking' model). The code required to implement a worker process is very small. This is known as the worker API. If your favorite language runs on Unix, then it can easily implement the API. While
+a worker is processing a message, a real-time display of the workers output
+(with ANSI colors) can be viewed in a web browser.
 
 Here is a sample screenshot of a single queue:
 
