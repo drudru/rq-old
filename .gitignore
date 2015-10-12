@@ -1,7 +1,8 @@
 config
 queue
-queue.noindex
-scheduler
+.queue.noindex
+scandir
+.scandir.noindex
 .#*
 log/*.log
 *.swp
