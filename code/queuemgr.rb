@@ -2,6 +2,8 @@ require 'socket'
 require 'json'
 require 'unixrack'
 
+require 'code/scandir'
+
 require 'code/main'
 require 'code/queue'
 require 'code/protocol'
@@ -15,6 +17,7 @@ module RQ
       @queues = { } # Hash of queue name => RQ::Queue object
       @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
       @web_server = nil
+      @scandir = nil
       @start_time = Time.now
     end
 
@@ -285,6 +288,8 @@ module RQ
     def final_shutdown!
       # Once all the queues are down, take the web server down
       Process.kill("TERM", @web_server) if @web_server
+      # Now the scandir
+      Process.kill("TERM", @scandir) if @scandir
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
@@ -325,6 +330,18 @@ module RQ
       end
     end
 
+    def start_scandir
+      @scandir = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+
+        $0 = $log.progname = '[rq-scandir]'
+        RQ::Scandir::run!
+      end
+    end
+
+
     def load_queues
       # Skip dot dirs and queues already running
       queue_dirs.each do |name|
@@ -357,6 +374,8 @@ module RQ
       load_queues
 
       start_webserver
+
+      start_scandir
 
       set_nonblocking(@sock)
 
@@ -410,6 +429,11 @@ module RQ
                 # TODO: Try to restart the web server? How many times?
                 $log.fatal("The web server has died. Terminating this RQ instance.")
                 @web_server = nil
+                shutdown!
+              elsif @scandir == pid
+                # TODO: Try to restart the web server? How many times?
+                $log.fatal("The scandir process has died. Terminating this RQ instance.")
+                @scandir = nil
                 shutdown!
               end
             end
