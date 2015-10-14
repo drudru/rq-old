@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# The variable RQ_WRITE is a pipe to the RQ queue
+function write_status {
+  echo $1 $2 >&$RQ_WRITE
+}
+
+# The variable RQ_READ is a pipe from the RQ queue
+function read_status {
+  read -u $RQ_READ
+}
+
+echo "----------- Current Working Directory ---------"
+pwd
+echo "-----------------------------"
+echo
+echo "----------- RQ env ---------"
+env | grep RQ_
+echo "-----------------------------"
+echo
+echo "----------- System env ---------"
+env | grep -v RQ_
+echo "-----------------------------"
+
+write_status "done" "script completed happily"
+

@@ -44,7 +44,6 @@ module RQ
     PROTOCOL_MESSAGES = %w{
       queues
       create_queue
-      create_queue_link
       up_queue
       down_queue
       pause_queue

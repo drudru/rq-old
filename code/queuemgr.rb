@@ -2,6 +2,9 @@ require 'socket'
 require 'json'
 require 'unixrack'
 
+require 'code/queuename'
+require 'code/scandir'
+
 require 'code/main'
 require 'code/queue'
 require 'code/protocol'
@@ -15,6 +18,7 @@ module RQ
       @queues = { } # Hash of queue name => RQ::Queue object
       @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
       @web_server = nil
+      @scandir = nil
       @start_time = Time.now
     end
 
@@ -54,18 +58,9 @@ module RQ
       @sock = UNIXServer.open('config/queuemgr.sock')
     end
 
-    # Validate characters in name
-    # No '.' or '/' since that could change path
-    # Basically it should just be alphanum and '-' or '_'
-    def valid_queue_name(name)
-      return false unless name
-      return false unless name.length > 0
-      nil == name.tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*').index('*')
-    end
-
     def queue_dirs
       Dir.entries('queue').select do |x|
-        valid_queue_name x and
+        RQ::QueueName::valid_queue_name x and
         File.readable? File.join('queue', x, 'config.json')
       end
     end
@@ -99,7 +94,7 @@ module RQ
         send_packet(sock, resp)
 
       when 'down_queue'
-        if valid_queue_name(arg) && queue = @queues[arg]
+        if RQ::QueueName::valid_queue_name(arg) && queue = @queues[arg]
           status = RQ::AdminOper.new('config', arg)
           if status.set_admin_status('DOWN')
             resp = ['ok', arg].to_json
@@ -112,7 +107,7 @@ module RQ
         send_packet(sock, resp)
 
       when 'up_queue'
-        if valid_queue_name(arg) && queue = @queues[arg]
+        if RQ::QueueName::valid_queue_name(arg) && queue = @queues[arg]
           status = RQ::AdminOper.new('config', arg)
           if status.set_admin_status('UP')
             resp = ['ok', arg].to_json
@@ -125,7 +120,7 @@ module RQ
         send_packet(sock, resp)
 
       when 'pause_queue'
-        if valid_queue_name(arg) && queue = @queues[arg]
+        if RQ::QueueName::valid_queue_name(arg) && queue = @queues[arg]
           status = RQ::AdminOper.new('config', arg)
           if status.set_admin_status('PAUSE')
             resp = ['ok', arg].to_json
@@ -138,7 +133,7 @@ module RQ
         send_packet(sock, resp)
 
       when 'resume_queue'
-        if valid_queue_name(arg) && queue = @queues[arg]
+        if RQ::QueueName::valid_queue_name(arg) && queue = @queues[arg]
           status = RQ::AdminOper.new('config', arg)
           if status.set_admin_status('RESUME')
             resp = ['ok', arg].to_json
@@ -167,7 +162,7 @@ module RQ
         if @queues.has_key?(options['name'])
           resp = ['fail', 'already created'].to_json
         else
-          if not valid_queue_name(options['name'])
+          if not RQ::QueueName::valid_queue_name(options['name'])
             resp = ['fail', 'queue name has invalid characters'].to_json
           else
             resp = ['fail', 'queue not created'].to_json
@@ -179,50 +174,6 @@ module RQ
             end
           end
         end
-        send_packet(sock, resp)
-
-      when 'create_queue_link'
-        err = false
-
-        begin
-          options = JSON.parse(File.read(arg))
-        rescue
-          reason = "could not read queue config [ #{arg} ]: #{$!}"
-          err = true
-        end
-
-        if not err
-          err, reason = RQ::Queue.validate_options(options)
-        end
-
-        if not err
-          if @queues.has_key?(options['name'])
-            reason = 'queue is already running'
-            err = true
-          end
-        end
-
-        if not err
-          if not valid_queue_name(options['name'])
-            reason = 'queue name has invalid characters'
-            err = true
-          end
-        end
-
-        if not err
-          worker = RQ::Queue.create(options, arg)
-          $log.info("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
-          if worker
-            @queues[worker.name] = worker
-            reason = 'queue created - awesome'
-            err = false
-          else
-            reason = 'queue not created'
-            err = true
-          end
-        end
-
-        resp = [ (err ? 'fail' : 'success'), reason ].to_json
         send_packet(sock, resp)
 
       when 'delete_queue'
@@ -285,6 +236,8 @@ module RQ
     def final_shutdown!
       # Once all the queues are down, take the web server down
       Process.kill("TERM", @web_server) if @web_server
+      # Now the scandir
+      Process.kill("TERM", @scandir) if @scandir
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
@@ -325,6 +278,18 @@ module RQ
       end
     end
 
+    def start_scandir
+      @scandir = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+
+        $0 = $log.progname = '[rq-scandir]'
+        RQ::Scandir::run!
+      end
+    end
+
+
     def load_queues
       # Skip dot dirs and queues already running
       queue_dirs.each do |name|
@@ -357,6 +322,8 @@ module RQ
       load_queues
 
       start_webserver
+
+      start_scandir
 
       set_nonblocking(@sock)
 
@@ -410,6 +377,11 @@ module RQ
                 # TODO: Try to restart the web server? How many times?
                 $log.fatal("The web server has died. Terminating this RQ instance.")
                 @web_server = nil
+                shutdown!
+              elsif @scandir == pid
+                # TODO: Try to restart the web server? How many times?
+                $log.fatal("The scandir process has died. Terminating this RQ instance.")
+                @scandir = nil
                 shutdown!
               end
             end
