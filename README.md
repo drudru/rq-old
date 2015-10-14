@@ -404,7 +404,7 @@ done    | When the script is finished, and has successfully performed its proces
         | example: `done Script is done.<nl>`
 err     | When the script has failed, and we want to message to go to 'err' (probably to notify someone that something has gone wrong and needs operator attention). Any exit status at this point will take the message to 'err'.
         | example: `err Database dump script failed.<nl>`
-relayed | This is used by the relay queue and should not be used by a user queue script.
+relayed | This should only be set by the relay queue. It indicates that the message was relayed and provides the new url.
 resend  | When the script has failed, but we want to just retry running it again, we respond with a 'resend'. This will cause a message to go back into 'que' with a due time of X seconds into the future.
         | example: `resend 300-Memcached at foo.example.com not responding.<nl>`
 dup     | Create a clone of the existing message (including attachments) to the new destination. NOTE: This is the first status response that is a 2 way conversation with the queue process. If the queue does match /^https?:/, then it goes to 'relay' to be sent on. Otherwise it is considered a local. If relay or the local queue doesn't exist or is admin DOWN/PAUSE, then the the response will indicate failure. This resets the current count for the newly generated message.
