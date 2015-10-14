@@ -21,7 +21,7 @@ def write_config(data, conffile='config/config.json')
 end
 
 def link_queue(name)
-  FileUtils.ln_sf("../scandir/#{name}", "queue/#{name}") unless File.symlink?("queue/#{name}")
+  FileUtils.ln_sf("../default_scripts/#{name}", "scandir/#{name}") unless File.symlink?("scandir/#{name}")
   puts "Installed queue #{name}"
 end
 
