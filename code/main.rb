@@ -158,24 +158,6 @@ module RQ
       redirect "#{root}q/#{params['queue']['name']}"
     end
 
-    post '/new_queue_link' do
-      throw :halt, [403, "Queue creation not allowed at this time."] unless allow_new_queue?
-
-      # This creates and starts a queue via a config file in json
-      js_data = {}
-      begin
-        js_data = JSON.parse(File.read(params['queue']['json_path']))
-      rescue
-        p $!
-        p "BAD config.json - could not parse"
-        throw :halt, [404, "404 - Couldn't parse json file (#{params['queue']['json_path']})."]
-        end
-      result = queuemgr.create_queue_link(params['queue']['json_path'])
-      #TODO - do the right thing with the result code
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "#{root}q/#{js_data['name']}"
-    end
-
     post '/delete_queue' do
       # This creates and starts a queue
       result = queuemgr.delete_queue(params['queue_name'])

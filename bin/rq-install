@@ -20,46 +20,28 @@ def write_config(data, conffile='config/config.json')
   end
 end
 
+def link_queue(name)
+  FileUtils.ln_sf("../scandir/#{name}", "queue/#{name}") unless File.symlink?("queue/#{name}")
+  puts "Installed queue #{name}"
+end
+
 def create_queues
+
+  # Create main queue directory
   # After watching my mds process go nuts
   # http://support.apple.com/kb/TA24975?viewlocale=en_US
   FileUtils.mkdir_p('.queue.noindex')
   FileUtils.ln_sf('.queue.noindex', 'queue') unless File.symlink?('queue')
 
+  # Create scandir directory
   FileUtils.mkdir_p('.scandir.noindex')
   FileUtils.ln_sf('.scandir.noindex', 'scandir') unless File.symlink?('scandir')
 
-  queue = {
-    'name'        => 'relay',
-    'script'      => './code/relay_script.rb',
-    'num_workers' => '1',
-    'exec_prefix' => '',
-  }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
-
-  queue = {
-    'name'        => 'webhook',
-    'script'      => './code/webhook_script.rb',
-    'num_workers' => '1',
-    'exec_prefix' => '',
-  }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
-
-  queue = {
-    'name'        => 'cleaner',
-    'script'      => './code/cleaner_script.rb',
-    'num_workers' => '1',
-    'exec_prefix' => '',
-  }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
-
-  queue = {
-    'name'        => 'rq_router',
-    'script'      => './code/rq_router_script.rb',
-    'num_workers' => '1',
-    'exec_prefix' => '',
-  }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
+  link_queue('relay')
+  link_queue('debug')
+  link_queue('cleaner')
+  link_queue('rq_router')
+  link_queue('webhook')
 
   true
 end
