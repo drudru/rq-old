@@ -1,5 +1,4 @@
-domready(function() {
-  var a2hObj = ansi2html.ansi_to_html_obj();
+  var ansi = new AnsiUp();
 
   var CONTINUE_STATES = ["prep", "que", "run"];
   var last_done = 0;
@@ -32,45 +31,11 @@ domready(function() {
 
     if (txt.length == 0) return;
 
-    var new_block = "";
-    var new_fragment = "";
-
-    // Look for last newline and adjust it to a usable value
-    // (aka ++, since the split requires that value vs. actual idx)
-    var last_newline_idx = txt.lastIndexOf("\n") + 1;
-    if ((last_newline_idx != 0) && (last_newline_idx == txt.length)) {
-      // no new fragment
-      new_block = last_fragment + txt;
-      new_fragment = last_fragment = "";
-    } else {
-      // new fragment
-      new_block = last_fragment + txt.slice(0, last_newline_idx);
-      new_fragment = last_fragment = txt.slice(last_newline_idx);
-    }
-
-    // Delete the last fragment we're about to replace it with a larger block
-    var span_last_fragment = document.getElementById("last_fragment");
-    if (span_last_fragment) span_last_fragment.parentNode.removeChild(span_last_fragment);
-
-    var block = a2hObj.ansi_to_html(a2hObj.linkify(a2hObj.escape_for_html(new_block)));
+    var block = ansi.ansi_to_html(ansi.linkify(ansi.escape_for_html(txt)));
     if (block) {
       // console.log("block: " + block);
       var ansitxt = document.getElementById("ansitxt");
       ansitxt.innerHTML += block;
-    }
-
-    // Now preserve state of a2hObj for multi-line ansi
-    // and do throw-away processing of fragment
-    var a2hObjFrag = Object.create(a2hObj);
-    var fragment = a2hObjFrag.ansi_to_html(a2hObjFrag.linkify(a2hObjFrag.escape_for_html(new_fragment)));
-    if (fragment) {
-      // console.log("fragment: " + fragment);
-      var new_last_fragment = document.createElement("span");
-      new_last_fragment.id = "last_fragment";
-      new_last_fragment.innerHTML = fragment;
-
-      var ansitxt = document.getElementById("ansitxt");
-      ansitxt.insertBefore(new_last_fragment, ansitxt.nextSibling);
     }
 
     // Scroll to the bottom if the box is checked
@@ -140,4 +105,3 @@ domready(function() {
   };
 
   nextChunk();
-});
