@@ -6,9 +6,6 @@
 
 <table class="message-info">
   <tr>
-    <td class="key">dest</td><td class="sep"> : </td><td><%= msg['dest'] %></td>
-  </tr>
-  <tr>
     <td class="key">status</td><td class="sep"> : </td><td>
     <% if msg['state'] == 'relayed'
       stuff, url = msg['status'].split(' - ', 2) %>
@@ -20,11 +17,26 @@
   <tr>
     <td class="key">state</td><td class="sep"> : </td><td><%= msg['state'] %></td>
   </tr>
+  <tr> <td colspan=3>&nbsp;</td> </tr>
   <tr>
-    <td class="key">src</td><td class="sep"> : </td><td><%= msg['src'] %></td>
+    <td class="key">param1</td><td class="sep"> : </td><td><%= msg['param1'] %></td>
   </tr>
+  <tr>
+    <td class="key">param2</td><td class="sep"> : </td><td><%= msg['param2'] %></td>
+  </tr>
+  <tr>
+    <td class="key">param3</td><td class="sep"> : </td><td><%= msg['param3'] %></td>
+  </tr>
+  <tr>
+    <td class="key">param4</td><td class="sep"> : </td><td><%= msg['param4'] %></td>
+  </tr>
+  <tr> <td colspan=3>&nbsp;</td> </tr>
+  <tr>
+    <td class="key">count</td><td class="sep"> : </td><td><%= msg['count'] %></td>
+  </tr>
+  <tr> <td colspan=3>&nbsp;</td> </tr>
 
-  <% %w(msg_id count max_count param1 param2 param3 param4 post_run_webhook orig_msg_id cloned_from dups dup force_remote).each do |key| %>
+  <% %w(msg_id max_count post_run_webhook dest src orig_msg_id cloned_from dups dup force_remote).each do |key| %>
   <% next unless msg.has_key?(key) %>
   <tr class="hideme hidden">
     <td class="key">
