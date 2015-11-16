@@ -7,7 +7,6 @@ require 'code/adminoper'
 require 'code/queueclient'
 require 'code/protocol'
 require 'pathname'
-require 'parse-cron'
 
 module RQ
 
@@ -29,7 +28,6 @@ module RQ
     :env_vars,
     :coalesce_params,
     :blocking_params,
-    :schedule
   )
 
     def to_json
@@ -40,18 +38,7 @@ module RQ
         'exec_prefix'     => exec_prefix,
         'env_vars'        => env_vars,
         'coalesce_params' => coalesce_params,
-        'blocking_params' => blocking_params,
-        'schedule'        => schedule.map do |s|
-                               {
-                                 'cron'     => s['cron'],
-                                 'params'   => {
-                                   'param1' => s['param1'],
-                                   'param2' => s['param2'],
-                                   'param3' => s['param3'],
-                                   'param4' => s['param4'],
-                                 }
-                               }
-                             end
+        'blocking_params' => blocking_params
       }.to_json
     end
   end
@@ -496,22 +483,6 @@ module RQ
         new_config.blocking_params = []
       end
 
-      new_config.schedule        = (conf['schedule'] || []).map do |s|
-                                     begin
-                                       {
-                                         'cron'     => s['cron'],
-                                         'cron_obj' => CronParser.new(s['cron']),
-                                         'params'   => {
-                                           'param1' => s['param1'],
-                                           'param2' => s['param2'],
-                                           'param3' => s['param3'],
-                                           'param4' => s['param4'],
-                                         }
-                                       }
-                                     rescue
-                                       $log.warn("Invalid cron spec: #{s['cron']}: [ #{$!} ]")
-                                     end
-                                   end.compact
       new_config
     end
 
@@ -1306,37 +1277,10 @@ module RQ
       run_job(ready_msg)
     end
 
-    # If the upcoming minute should have a scheduled job, add it to the que
-    def run_cron!
-      # This could be DOWN, PAUSE, SCRIPTERROR
-      return unless @status.status == 'UP'
-
-      now = Time.now
-      @config.schedule.each do |sched|
-        next_time = sched['cron_obj'].next(now)
-        if @last_sched == next_time
-          $log.debug("Already ran scheduled job #{next_time}")
-        elsif next_time - now < 60
-          @last_sched = next_time
-          begin
-            msg = make_message sched['params'].merge({
-              'dest' => @name,
-              'src'  => 'cron',
-              'due'  => next_time.to_i,
-            })
-            $log.info("Queueing scheduled job #{next_time}: #{msg['msg_id']}")
-          rescue
-            $log.warn("Failed to que scheduled job #{next_time}")
-          end
-        end
-      end
-    end
-
     def run_loop
       set_nonblocking(@sock)
 
       while true
-        run_cron!
         run_scheduler!
 
         io_list = @run.map { |i| i['child_read_pipe'] }.compact
