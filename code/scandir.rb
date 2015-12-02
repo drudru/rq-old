@@ -28,13 +28,21 @@ module RQ
     def self.run!
 
       # Look at each symlink in scandir
-      # Generate a config.json if necessary
+      # If the directory has an executable 'run' file and an optional config.json...
+      # use that for an rq 'que'. The queue always has a separate directory since it needs
+      # directories for prep, que, run, etc. Otherwise, it would have to put them into the
+      # possibly 'git' versioned directory with the source 'run' and 'config.json' and that
+      # would be messy.
+      #
+      # In detail, if there is a config.json in there, use it as initial config
+      # If not, still generate a config.json with default values
       #
       # If a new queue, create a que
       # If a config.json changed, notify a que
       # If a running que is no longer in scandir, shutdown a que
       #
       # In the future, we would only run this if the directory changed
+      # or the symlinked 'config.json' (if present), changed
 
       # Wait for queue mgr to start things
       # TODO: why not ask queuemgr for state instead
