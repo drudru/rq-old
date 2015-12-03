@@ -154,11 +154,7 @@ configuration. A typical config:
 
 config.json
 ``` json
-{"name":"interval_do_work","script":"/usr/bin/interval_script.sh","num_workers":5,
- "schedule":[
-  {"cron":"*/10 * * * *",  "param1":"10m"},
-  {"cron":"@hourly",       "param1":"1h"}
-] }
+{"name":"interval_do_work","script":"/usr/bin/interval_script.sh","num_workers":5}
 ```
 form.json
 ``` json
@@ -174,9 +170,6 @@ exec_prefix          | This is prepended to the script path before calling `exec
 env_vars             | Hash of environment variables and values set before calling `exec()`, default empty
 coalesce_params      | Array of param numbers. Coalesce messages if they have identical parameters, default []
 blocking_params      | Array of param numbers. Run one message with identical parameters at a time, default []
-schedule             | Array of hashes of cron-like scheduled jobs
-schedule[]: **cron** | A cron-like five element recurring schedule, see crontab(5)
-schedule[]: paramN   | Optional param1-param4 will be passed to each scheduled job
 
 _Fields in **bold** are mandatory, all others are optional._
 
