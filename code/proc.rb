@@ -19,7 +19,7 @@ module RQ
         Signal.trap('CHLD', 'DEFAULT')
         Signal.trap('HUP', 'DEFAULT')
 
-        $0 = $log.progname = "[rq-que] [#{name}]"
+        $0 = $log.progname = "[rq-#{name}]"
         begin
           parent_wr.close
           #child only code block
@@ -45,9 +45,9 @@ module RQ
         return nil
       end
 
+      proc_obj.pid = child_pid
       proc_obj.name = name
-      worker.child_write_pipe = parent_wr
-      worker.pid = child_pid
+      proc_obj.child_write_pipe = parent_wr
 
       proc_obj
       # If anything went wrong at all log it and return nil.
