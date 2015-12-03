@@ -18,6 +18,7 @@ require 'code/queueclient'
 module RQ
 
   class TimerRecord < Struct.new(
+    :name,          # name
     :config_stat,   # File.stat
     :config,        # JSON converted to Ruby objects
     :due            # due in epoch seconds
@@ -30,6 +31,9 @@ module RQ
       @timers = {}
       @due = 0
       @parent_rd_pipe = child_rd    # read-only end of pipe from parent
+
+      @sent = 0
+      @errors = 0
     end
 
     def run!
@@ -100,6 +104,11 @@ module RQ
 
         rdy_rd, rdy_wr, _ = IO.select(reads, writes, nil, poll_time)
 
+        if rdy_rd.nil?  # a timeout occurred
+          rdy_rd = []
+          rdy_wr = []
+        end
+
         rdy_rd.each do |io|
           if io == @unixsock
             client_socket, client_sockaddr = RQUNIXSocket.do_accept(@unixsock)
@@ -166,9 +175,12 @@ module RQ
 
     def handle_recv(req)
       if req.cmd == 'get_timers'
-        result = @timers.select { |k,trec| [k, trec.due] }
+        result = @timers.map { |k,trec| [k, trec.due] }
         SimplePC::SendPacket.new(req.sock, 'ok', result)  
-      elsif req.cmd == 'y'
+      elsif req.cmd == 'get_status'
+        result = { "sent" => @sent, "errors" => @errors }
+        SimplePC::SendPacket.new(req.sock, 'ok', result)  
+      elsif req.cmd == 'zzz'
       end
     end
 
@@ -206,6 +218,8 @@ module RQ
               # put the existing back in, but that would violate
               # a principle. Fail fast and never hide errors
               # By not adding it, it is as if the symlink was removed
+              @errors += 1
+              $log.error("error config issue #{name}")
             end
           end
         else
@@ -213,6 +227,7 @@ module RQ
 
           config = get_config(name)
           if config
+            timer_rec.name = name
             timer_rec.config = config
             timer_rec.due = @now
             timer_rec.config_stat = stat
@@ -236,27 +251,43 @@ module RQ
 
     def send_messages(rdy)
       rdy.each do
-        |trec|
+        |k,trec|
 
-        # Inject a message into relay
+        begin
+          if trec.config['msg']['dest'].start_with?('http:')
+            que_name = 'relay'
+          else
+            que_name = trec.config['msg']['dest']
+          end
 
-        qc = RQ::QueueClient.new('relay')
+          qc = RQ::QueueClient.new(que_name)
 
-        # Construct message
-        mesg = {}
-        keys = %w(dest param1 param2 param3 param4)
-        keys.each do |key|
-          next unless trec.config['msg'].has_key?(key)
-          mesg[key] = args[key]
+          # Construct message
+          mesg = {}
+          keys = %w(dest param1 param2 param3 param4)
+          keys.each do |key|
+            next unless trec.config['msg'].has_key?(key)
+            mesg[key] = trec.config['msg'][key]
+          end
+          result = qc.create_message(mesg)
+          print "#{result[0]} #{result[1]}\n"
+          if result[0] == "ok"
+            @sent += 1
+          else
+            @errors += 1
+            $log.error("error when sending message #{trec.name}")
+            $log.error("bad result for create_message #{result.inspect}")
+          end
+        rescue
+          @errors += 1
+          $log.error("exception when sending message #{trec.name}")
+          $log.error($!)
         end
-        result = qc.create_message(mesg)
-        print "#{result[0]} #{result[1]}\n"
-        result[0] == "ok" ? 0 : 1
       end
     end
 
     def set_new_due(rdy)
-      rdy.each { |trec| trec.due += trec.config['period'] }
+      rdy.each { |k,trec| trec.due += trec.config['period'] }
     end
 
     def get_config(name)
@@ -288,17 +319,17 @@ module RQ
 
       config = obj
 
-      if not config.has_key?('due')
-        $log.warn("missing 'due' field in timers/#{name}.json")
+      if not config.has_key?('period')
+        $log.warn("missing 'period' field in timers/#{name}.json")
         return nil
       end
 
-      if config['due'].class != Fixnum
-        $log.warn("invalid 'due' field in timers/#{name}.json")
+      if config['period'].class != Fixnum
+        $log.warn("invalid 'period' field in timers/#{name}.json")
         return nil
       end
-      if config['due'] < 60
-        $log.warn("'due' field too small in timers/#{name}.json")
+      if config['period'] < 60
+        $log.warn("'period' field too small in timers/#{name}.json")
         return nil
       end
 
@@ -316,7 +347,7 @@ module RQ
     end
 
     def shutdown!
-      exit(0)
+      exit!(0)
     end
   end
 end
