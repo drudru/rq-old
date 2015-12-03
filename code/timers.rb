@@ -176,10 +176,10 @@ module RQ
     def handle_recv(req)
       if req.cmd == 'get_timers'
         result = @timers.map { |k,trec| [k, trec.due] }
-        SimplePC::SendPacket.new(req.sock, 'ok', result)  
+        SimplePC::SendPacket.send(req.sock, 'ok', result)  
       elsif req.cmd == 'get_status'
         result = { "sent" => @sent, "errors" => @errors }
-        SimplePC::SendPacket.new(req.sock, 'ok', result)  
+        SimplePC::SendPacket.send(req.sock, 'ok', result)  
       elsif req.cmd == 'zzz'
       end
     end

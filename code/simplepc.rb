@@ -112,6 +112,54 @@ module SimplePC
       end
     end
 
+    def block_io()
+      begin
+        @data = @sock.read(13)
+      rescue Errno::EINTR
+        #retry
+      rescue EOFError
+        @state = :err
+        @err_reason = :eof
+        return
+      end
+
+      if @data.bytesize < 13
+        @state = :err
+        @err_reason = :incomplete_header
+        return
+      end
+
+      if (@data[0..3] != 'rq2 ')
+        @state = :err
+        @err_reason = :protocol
+        return
+      end
+
+      if (@data[4..11] !~ /\d{8,8}/)
+        @state = :err
+        @err_reason = :protocol_size
+        return
+      end
+
+      @payload_size = @data[4..11].to_i(10)
+
+      data = @sock.read(@payload_size)
+
+      # TODO: handle for large buffers
+      if data.bytesize != @payload_size
+        @state = :err
+        @err_reason = :payload_size
+        return
+      end
+
+      #obj = JSON.parse(@data[13..-1])
+      obj = JSON.parse(data)
+      @cmd = obj[0]
+      @payload = obj[1]
+      @state = :done
+    end
+
+
   end
 
   class SendPacket < BasePacket
@@ -128,6 +176,24 @@ module SimplePC
       pkt.data = sprintf("rq2 %08d %s", json.bytesize, json)
       pkt.orig_data = pkt.data
       pkt
+    end
+
+    def block_io()
+      # TODO: handle for large buffers
+      len = 0
+      begin
+        len = @sock.write(@data)
+      rescue Errno::EINTR
+      rescue EOFError
+      end
+
+      if len != @data.bytesize
+        @state = :err
+        @err_reason = :payload_size
+        return
+      end
+
+      @state = :done
     end
 
     def process_io()

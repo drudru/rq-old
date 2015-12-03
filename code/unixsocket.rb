@@ -24,6 +24,13 @@ module RQ
       return nil,nil
     end
 
+    def self.start_client(path)
+      sock = UNIXSocket.new(path)
+
+      sock
+    end
+
+
   end
 
 end
