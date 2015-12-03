@@ -204,7 +204,7 @@ module RQ
       end
 
       queue_config['name'] = que_name
-      queue_config['script'] = File.join(real_path, 'run')
+      queue_config['script'] = File.realpath("scandir/#{que_name}/run")
       queue_config['num_workers'] ||= '1'
       queue_config['exec_prefix'] ||= ''
 
