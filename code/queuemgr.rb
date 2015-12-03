@@ -235,6 +235,8 @@ module RQ
           puts "#{q.pid} #{e.inspect}"
         end
       end
+
+      @timers.child_write_pipe.close() if @timers
     end
 
     def final_shutdown!
@@ -399,7 +401,7 @@ module RQ
                 $log.fatal("The scandir process has died. Terminating this RQ instance.")
                 @scandir = nil
                 shutdown!
-              elsif @timers.pid == pid
+              elsif @timers && @timers.pid == pid
                 # TODO: Try to restart? How many times?
                 $log.fatal("The timers process has died. Terminating this RQ instance.")
                 @timers = nil
