@@ -37,6 +37,10 @@ def create_queues
   FileUtils.mkdir_p('.scandir.noindex')
   FileUtils.ln_sf('.scandir.noindex', 'scandir') unless File.symlink?('scandir')
 
+  # Create scandir directory
+  FileUtils.mkdir_p('.timers.noindex')
+  FileUtils.ln_sf('.timers.noindex', 'timers') unless File.symlink?('timers')
+
   link_queue('relay')
   link_queue('debug')
   link_queue('cleaner')

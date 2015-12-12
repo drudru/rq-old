@@ -43,6 +43,50 @@ if queuemgr.running?
 </table>
 <% end %>
 
+<h2>Timer List</h2>
+<%
+  timers = []
+  lvl = nil
+begin
+  sock = RQ::RQUNIXSocket.start_client('timers/sock')
+  spkt = SimplePC::SendPacket.send(sock, 'get_timers', nil)
+  spkt.block_io()
+  raise if spkt.state != :done
+  rpkt = SimplePC::RecvPacket.new(sock)
+  rpkt.block_io()
+  raise if rpkt.state != :done
+  if rpkt.cmd == 'ok'
+    timers = rpkt.payload
+  end
+rescue
+  lvl = $!
+end
+
+#if timers
+if lvl
+-%>
+<pre>Error: <%= lvl %></pre>
+<%
+elsif not timers.empty?
+  now = Time.now.to_i
+-%>
+<table id="queue-list" cellspacing="0" cellpadding="5">
+  <thead>
+    <tr>
+      <th class="left-aligned">NAME</th>
+      <th>DUE</th>
+    </tr>
+  </thead>
+  <tbody id="custom-queues">
+<%  timers.each_with_index do |timer, i| %>
+    <tr class="<%= 'odd-row' if i.odd? %>">
+      <td class="left-aligned"><%= timer[0] %></td>
+      <td><%= timer[1] - now %></td>
+<%  end %>
+  </tbody>
+</table>
+<% end -%>
+
 <div class="meta">
 <% if queuemgr.running? %>
   <span class="green">QUEUE MGR is OPERATIONAL</span>

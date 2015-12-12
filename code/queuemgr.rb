@@ -3,7 +3,10 @@ require 'json'
 require 'unixrack'
 
 require 'code/queuename'
+require 'code/proc'
+
 require 'code/scandir'
+require 'code/timers'
 
 require 'code/main'
 require 'code/queue'
@@ -19,6 +22,7 @@ module RQ
       @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
       @web_server = nil
       @scandir = nil
+      @timers = nil
       @start_time = Time.now
     end
 
@@ -231,6 +235,8 @@ module RQ
           puts "#{q.pid} #{e.inspect}"
         end
       end
+
+      @timers.child_write_pipe.close() if @timers
     end
 
     def final_shutdown!
@@ -238,6 +244,8 @@ module RQ
       Process.kill("TERM", @web_server) if @web_server
       # Now the scandir
       Process.kill("TERM", @scandir) if @scandir
+      # Now the timers
+      Process.kill("TERM", @timers.pid) if @timers
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
@@ -289,6 +297,14 @@ module RQ
       end
     end
 
+    def start_timers
+      @timers = RQ::Proc.start_process('timers') do
+        |rd_pipe|
+        timers = RQ::Timers.new(rd_pipe)
+        timers.run!
+      end
+    end
+
 
     def load_queues
       # Skip dot dirs and queues already running
@@ -324,6 +340,8 @@ module RQ
       start_webserver
 
       start_scandir
+
+      start_timers
 
       set_nonblocking(@sock)
 
@@ -379,9 +397,14 @@ module RQ
                 @web_server = nil
                 shutdown!
               elsif @scandir == pid
-                # TODO: Try to restart the web server? How many times?
+                # TODO: Try to restart? How many times?
                 $log.fatal("The scandir process has died. Terminating this RQ instance.")
                 @scandir = nil
+                shutdown!
+              elsif @timers && @timers.pid == pid
+                # TODO: Try to restart? How many times?
+                $log.fatal("The timers process has died. Terminating this RQ instance.")
+                @timers = nil
                 shutdown!
               end
             end

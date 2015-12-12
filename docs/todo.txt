@@ -1,0 +1,14 @@
+
+
+- Simple sections for web view
+- Implement logging for jobs (duration)
+- Implement job monitoring so web can get real-time status
+- 'chain' end state
+- Move web, scandir, timer, etc. to separate dir
+- Possibly record all jobs started (for a master queue or workflow trace)
+- Make scandir and timer separate systems that 'exec' vs fork
+- Move to rq2 protocol
+- Move to separate logger system (separate process)
+- Make web use a component type model (each system responsible for its own ui)
+- Fix relay script - only does remote delivery
+

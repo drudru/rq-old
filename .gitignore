@@ -3,6 +3,8 @@ queue
 .queue.noindex
 scandir
 .scandir.noindex
+timers
+.timers.noindex
 .#*
 log/*.log
 *.swp

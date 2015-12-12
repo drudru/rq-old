@@ -172,7 +172,7 @@
 </table>
 
 <!-- RELAYED -->
-<% if qc.name == 'relay' %>
+<% if num_msgs['relayed'] > 0 %>
 <div class="relayed">
   <h4><b><%= num_msgs['relayed'] %></b> in RELAYED</h4>
   <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
