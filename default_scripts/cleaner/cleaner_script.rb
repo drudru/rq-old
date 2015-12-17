@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
-$:.unshift(File.join(File.dirname(__FILE__), ".."))
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
-require 'vendor/environment'
 require 'fileutils'
 require 'date'
 require 'time'
@@ -74,6 +73,11 @@ def mv_logs(qname)
 end
 
 def remove_old(qname, days)
+  puts "status: processing #{qname}"
+  STDOUT.flush
+
+  # TODO: remove stuff in /err that has been acknowledged
+
   clean_queues = ["/done", "/relayed", "/prep", "/queue"]
   clean_queues.each do |cq|
     if File.exist?(qname + cq)
@@ -135,7 +139,7 @@ end
 ##################################################################
 # My MAIN
 ##################################################################
-basedir = "/rq/current"
+basedir = File.expand_path('../..', File.dirname(__FILE__))
 
 if not ENV.has_key?("RQ_PARAM1")
   fail_hard("need to specify a PARAM1")
@@ -150,6 +154,9 @@ else
   end
 end
 
+puts "queues: #{queues.inspect}"
+STDOUT.flush
+
 log_days = 2
 if ENV['RQ_PARAM2'] && ENV['RQ_PARAM2'].match(/\d/)
   log_days = $&.to_i
@@ -162,6 +169,8 @@ queues.each do |q|
   remove_old(q, log_days)
 end
 
-trim_relay(basedir + "/queue/relay", 60000)
+if File.exist?(basedir + "/queue/relay")
+  trim_relay(basedir + "/queue/relay", 60000)
+end
 
 write_status('done', "successfully ran this script")

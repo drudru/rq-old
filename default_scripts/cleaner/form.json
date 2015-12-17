@@ -1,0 +1,2 @@
+{"default": "hidden", "mesg_param1":{"label":"queue name", "help":"specific queue name or the value 'ALLQUEUES'"},"mesg_param2":{"label":"days to keep", "help":"default is 2"}}
+
