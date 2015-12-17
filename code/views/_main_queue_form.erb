@@ -15,3 +15,7 @@
           <input type="hidden" name="back" value="<%= request.path  %>" />
           <button id="restart-queue" name="restart" value="restart">Restart</button>
         </form>
+        <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/ack_errs" %>">
+          <input type="hidden" name="back" value="<%= request.path  %>" />
+          <button id="ack-errs-queue" name="ack_errs" value="ack_errs" style="width: 7em">Ack Errors</button>
+        </form>

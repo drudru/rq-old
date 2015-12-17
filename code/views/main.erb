@@ -11,7 +11,7 @@ if queuemgr.running?
   queues = queuemgr.queues.sort
   builtin_queues, custom_queues = [], []
   queues.each do |q|
-    if %w{relay cleaner webhook rq_router}.include? q
+    if %w{debug relay cleaner webhook rq_router}.include? q
       builtin_queues << q
     else
       custom_queues << q

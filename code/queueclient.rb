@@ -60,6 +60,7 @@ module RQ
       clone_message
       get_message_state
       get_message_status
+      ack_errs
     }
 
     def ping

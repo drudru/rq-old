@@ -1573,6 +1573,21 @@ module RQ
         send_packet(sock, resp)
         return
 
+      when 'ack_errs'
+        # TODO: an async, fire and forget way of doing this (fork)?
+        # lol: this whole system is built for this reason :-)
+        basedir = @queue_path + "/err/"
+        ents = Dir.entries(basedir).reject { |i| i.start_with?('.') }
+        ents.each do
+          |ent|
+          # Add a '.' to the front of the file. We then consider the error acknowledged
+          File.rename(basedir + ent, basedir + "." + ent)
+        end
+
+        resp = [ "ok", ents.length ].to_json
+        send_packet(sock, resp)
+        return
+
       when 'messages'
         case options['state']
         when 'prep'

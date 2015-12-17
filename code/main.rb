@@ -327,6 +327,25 @@ module RQ
       redirect params[:back]
     end
 
+    post '/q/:name/ack_errs' do
+      begin
+        qc = get_queueclient(params[:name])
+        res = qc.ack_errs(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      if not res
+        throw :halt, [500, "500 - Couldn't ack errs queue. Internal error."]
+      end
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't ack errs queue. #{res.inspect}."]
+      end
+
+      flash :notice, "Successfully acknowledged errors"
+      redirect params[:back]
+    end
+
     get '/q/:name/config.json' do
       path = "./queue/#{params['name']}/config.json"
 
