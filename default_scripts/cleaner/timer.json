@@ -3,6 +3,6 @@
   "msg" :
   {
     "dest" : "cleaner",
-    "param1" : "test"
+    "param1" : "ALLQUEUES"
   }
 }
