@@ -1602,6 +1602,8 @@ module RQ
           status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
         when 'err'
           status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
+        when 'errack'
+          status = Dir.entries(@queue_path + "/err/").select { |i| i.start_with?('.2') }
         else
           status = [ "fail", "invalid or missing 'state' field (#{options['state']})"]
         end

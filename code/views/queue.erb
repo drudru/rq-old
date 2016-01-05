@@ -167,6 +167,24 @@
   <% end %>
   </ul>
 <% end %>
+
+  <h4>ack'd</h4>
+
+<% msgs = qc.messages({'state' => 'errack'}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% _, date, rest = msg.split('.', 3) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <li><a href="<%= "#{root}q/#{qc.name}/.#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
       </td>
   </tbody>
 </table>
