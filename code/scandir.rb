@@ -146,7 +146,7 @@ module RQ
               $log.info("create que - #{que_name} -> UP result: #{res2}")
             end
             real_path = File.readlink("scandir/#{que_name}")
-            FileUtils.symlink(File.join(real_path, 'form.json'), "queue/#{que_name}/form.json", :force => true)
+            FileUtils.symlink("../" + File.join(real_path, 'form.json'), "queue/#{que_name}/form.json", :force => true)
           end
 
           sdrec.action = :none
