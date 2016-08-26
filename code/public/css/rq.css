@@ -27,10 +27,6 @@ table {
   text-align: left;
 }
 
-td {
-  border-top: 1px solid #DDDDDD;
-}
-
 .container {
   padding: 0 20px;
   margin: 0 auto;
