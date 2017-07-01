@@ -5,8 +5,8 @@ in your distributed system. Think of it as another one of those small, but
 important services (like crond). It uses directories and json text files on the
 Unix filesystem as its database. As a result, it is easy to understand and debug.
 
-**Note** - this version of rq is a branch off of brightroll/rq and may
-not be following that branch. This branch requires Ruby 2.0 and higher.
+**Note** - this version of rq is a branch off of brightroll/rq and is not following that branch.
+This branch requires Ruby 2.0 and higher and has a slightly different API.
 
 ## Concepts 
 Each item in the queue is a **Message**. Messages can be small, but RQ was
@@ -16,7 +16,8 @@ a local or remote queue. There is a special queue that relays messages reliably 
 machines don't have to be in the same data center and in fact can be on another
 continent. When a message is received in a queue, a worker process is started
 to ingest the message. The worker process is one-to-one with a unix process.
-(some call this a 'forking' model). The code required to implement a worker process is very small. This is known as the worker API. If your favorite language runs on Unix, then it can easily implement the API. While
+(some call this a 'forking' model). The code required to implement a worker process is very small.
+This is known as the worker API. If your favorite language runs on Unix, then it can easily implement the API. While
 a worker is processing a message, a real-time display of the workers output
 (with ANSI colors) can be viewed in a web browser.
 
@@ -191,9 +192,9 @@ schedules are supported and each can have different params.
   * (This is especially helpful when you have scripts running and you deploy a new version)
 * Files are consistent
 
-It *tries* hard to
+It *tries* very hard to:
 
-- insure message is in identical state every run
+- insure the message processing environment is in an identical state every run
 
 - avoid duplicate messages
   aka - there is a small chance that messages might be duplicated.
@@ -323,12 +324,17 @@ write_status "done" "script completed happily"
 <a name='section_Environment'></a>
 ### Environment
 
-When a queue has a message to process, and a slot is available to run, the
-queue script will be executed in a particular environment. This environment
-passes information about the message to the script via two ancient forms of
-Interprocess Communication: Environment variables and the filesystem.
+When a queue has a message to process, the
+queue script will be executed in a particular environment for that
+message. This environment
+passes information about the message to the script via the two ancient forms of
+Interprocess Communication: environment variables and the filesystem.
+The environment will also have certain file descriptors set up for the queue-script.
 
+** Filesystem **
 Current Dir = [que]/[state]/[short msg id]/job/
+
+The director
 
 Full Msg ID = host + q_name + msg_id
 
@@ -356,6 +362,8 @@ RQ_VER          | RQ version
 
 <a name='section_Logs_and_Attachments'></a>
 ### Logs and Attachments
+
+
 
 <a name='section_Pipe_Protocol'></a>
 ### Pipe Protocol
