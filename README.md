@@ -25,37 +25,39 @@ Here is a sample screenshot of a single queue:
 ![Screen Shot](docs/rq_screen_shot.png "Example Screen Shot")
 
 ## A brief overview of the system.
-Once RQ is installed, the user creates a queue. The queue requires only a few
+To use RQ just install it and create a 'queue'. The queue requires only a few
 parameters, but the most important one is the 'queue script'. This is a program
 written in *any* language that will process each message. The API for the queue
-script is easy to implement and described below. Whenever a message is received
+script is easy to implement and is described below. Whenever a message is received
 on that queue, this program runs. The program will either succeed, fail, or ask
 to retry *x* seconds in the future. If the script takes a long time to run, it
-can send periodic updates to RQ to indicate progress. The script can also
-provide a lot of logging and produces large files as output.
+can send periodic updates to RQ to indicate progress. The script is encouraged
+to generate logs. It is also ok for the script to generate new files as output.
 
 The RQ system provides a REST, HTML, cmd-line, or low-level socket API to work
 with messages and queues. That is all there is to it.
 
 When would you use RQ?
 In a typical web application, you should always respond to the browser within a
-small time frame. You should also avoid using a lot of memory in this section
-of your application stack as well. If you know a particular computation will
-exceed those requirements, you should hand off the task to a queueing system.
+small time frame. If the users request will consume a lot of time and space
+(CPU and Memory), then it is probably best to hand off the request to a queueing
+system like RQ. Once you do that, you will receive an 'id' for the message in the
+queue. You can store that in the users session and provide them periodic updates
+on the status of that process.
 
-If you have scripts that run via cron, you should probably run that under RQ.
-In this scenario, RQ will monitor that the script properly executed.
+If you have scripts that run under cron, you should probably run that under RQ.
+RQ will monitor that the script properly executed, and never fails silently.
 
 Here are some examples:
 
 * Transcoding a video file (high cpu)
 * Implement a large query for a user in the background
 * Have a queue for curl requests for URLs passed in
-* A processing pipeline of files stored in S3 (light map/reduce)
+* A processing pipeline for files stored in S3 (a lightweight map/reduce)
   * retrieve
   * filter
   * reduce
-  * sftp to partner
+  * sftp result to destination
 * Deploy an update to systems all over the world for user-facing web app (high latency)
 * Periodically rotate and send HTTP logs to a NoSQL database for search and analysis
 * Verify URLs with Internet Explorer (and take screenshots) on a box controllable via a simple web api
