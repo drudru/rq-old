@@ -83,7 +83,6 @@ Table Of Contents
   * [Bash](#section_Bash)
 * [Queue Script API](#section_Queue_Script_API)
   * [Environment](#section_Environment)
-  * [Logs and Attachments](#section_Logs_and_Attachments)
   * [Pipe Protocol](#section_Pipe_Protocol)
 * [Special Queues](#section_Special_Queues)
 * [Internals](#section_Internals)
@@ -479,11 +478,6 @@ The system also supports 'attachments'. They are in the following directory:
 
 Attachments can be stored with the message when the message is being created for a queue. They are relayed with the message when it goes to any other queues for
 processing.
-
-<a name='section_Logs_and_Attachments'></a>
-### Logs and Attachments
-
-
 
 <a name='section_Pipe_Protocol'></a>
 ### Pipe Protocol
