@@ -1,0 +1,3 @@
+#!/bin/sh
+cd "$( dirname ${RQ_SCRIPT} )"
+exec /usr/bin/env ruby webhook_script.rb
