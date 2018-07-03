@@ -352,6 +352,7 @@ module RQ
           ENV["RQ_SCRIPT"] = @config.script
           ENV["RQ_REALSCRIPT"] = script_path
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}#{@root}"
+          ENV["RQ_PORT"] = "#{@port}"
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
