@@ -22,8 +22,12 @@ if queuemgr.running?
   <thead>
     <tr>
       <th class="left-aligned">NAME</th>
-      <th>MESSAGES</th>
-      <th>PING</th>
+      <th>PREP</th>
+      <th>QUEUE</th>
+      <th>RUN</th>
+      <th>ERR</th>
+      <th>DONE</th>
+      <th>RELAYED</th>
       <th>PID</th>
       <th>UPTIME</th>
       <th>STATUS</th>
@@ -70,7 +74,7 @@ if lvl
 elsif not timers.empty?
   now = Time.now.to_i
 -%>
-<table id="queue-list" cellspacing="0" cellpadding="5">
+<table id="timers-list" cellspacing="0" cellpadding="5">
   <thead>
     <tr>
       <th class="left-aligned">NAME</th>

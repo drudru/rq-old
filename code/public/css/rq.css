@@ -34,6 +34,10 @@ table {
   position: relative;
 }
 
+#queue-list {
+  text-align: right;
+}
+
 #queue-list th {
   background: #AB9B7D;
   color: #FEF9EE;

@@ -4,13 +4,14 @@
     qc = get_queueclient(name)
     raise unless qc.running?
     status = qc.status
+    fields = ['prep', 'que', 'run', 'err', 'done', 'relayed']
 -%>
 <%  if status != 'DOWN' -%>
-      <td>
-        <pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map {
-          |ab|
-          sp_beg = '<span class="none">'
-          sp_end = '</span>'
+<%    numbers = qc.num_messages -%>
+<%    fields.each do |fld| -%>
+      <%=
+          ab = [ fld, numbers[fld] ]
+          cls = 'none'
           if ab[1] > 0
             cls = 'yellow'
             if ab[0] == 'err'
@@ -18,20 +19,21 @@
             elsif ['done', 'relayed'].include? ab[0]
               cls = 'green'
             end
-            sp_beg = "<span class=\"#{cls}\">"
-            sp_end = '</span>'
           end
-          "#{sp_beg}#{ab[0]}:#{ab[1].to_s.ljust(4)}#{sp_end}"
-        }.join
-        -%></pre>
-      </td>
+          "<td class=\"#{cls}\">#{ab[1]}</td>"
+      -%>
+<%    end -%>
 <%  else -%>
       <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
 <%  end -%>
-      <td><%= qc.ping %></td>
       <td><%= qc.read_pid %></td>
       <td><%= qc.uptime %></td>
-      <td>
+      <td style="text-align: center">
         <span class="<%= status == 'UP' ? 'green' : 'red' %>"><%= status %></span>
       </td>
 <% rescue -%>
