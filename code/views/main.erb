@@ -74,18 +74,20 @@ if lvl
 elsif not timers.empty?
   now = Time.now.to_i
 -%>
-<table id="timers-list" cellspacing="0" cellpadding="5">
+<table id="timer-list" cellspacing="0" cellpadding="5">
   <thead>
     <tr>
       <th class="left-aligned">NAME</th>
       <th>DUE</th>
+      <th></th>
     </tr>
   </thead>
-  <tbody id="custom-queues">
+  <tbody style="background: #FEF9EE">
 <%  timers.each_with_index do |timer, i| %>
     <tr class="<%= 'odd-row' if i.odd? %>">
       <td class="left-aligned"><%= timer[0] %></td>
       <td><%= timer[1] - now %></td>
+      <td></td>
 <%  end %>
   </tbody>
 </table>

@@ -51,6 +51,25 @@ table {
   white-space: nowrap;
 }
 
+#timer-list {
+  text-align: right;
+  width: 400px;
+}
+
+#timer-list th {
+  background: #AB9B7D;
+  color: #FEF9EE;
+}
+
+#timer-list tr {
+  vertical-align: text-top;
+}
+
+#timer-list td {
+  white-space: nowrap;
+}
+
+
 #custom-queues {
   background: #FEF9EE;
 }
