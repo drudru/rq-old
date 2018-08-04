@@ -1,5 +1,5 @@
 {
-  "period" : 3600,
+  "period" : 86400,
   "msg" :
   {
     "dest" : "cleaner",
