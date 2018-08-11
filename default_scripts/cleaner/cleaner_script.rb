@@ -109,6 +109,33 @@ def remove_old(qname, days)
   end
   
 end
+
+def remove_old_err(qname, days)
+  puts "status: processing #{qname}"
+  STDOUT.flush
+
+  clean_queues = ["/err"]
+  clean_queues.each do |cq|
+    if File.exist?(qname + cq)
+
+      # go by directories and remove any day dir > days + 1
+      # then go into the hour dirs and remove by time
+      # easier to whack a whole higher level dir then stat everything below it
+
+      Dir.glob(qname + cq + "/.20*").each do |x|
+        name = File.basename(x)
+        file_date = name.split('.')[1]
+        age_days = Date.today - Date.strptime(file_date, "%Y%m%d")
+        if age_days >= days + 1
+          puts "status: removing " + x
+          STDOUT.flush
+          FileUtils.rm_rf(x)
+        end
+      end
+    end
+  end
+end
+
   
 def trim_relay(qpath, num)
   puts "Trimming Relay to #{num} entries"
@@ -157,16 +184,19 @@ end
 puts "queues: #{queues.inspect}"
 STDOUT.flush
 
-log_days = 2
+log_days = 3
 if ENV['RQ_PARAM2'] && ENV['RQ_PARAM2'].match(/\d/)
   log_days = $&.to_i
   puts "OVERRIDE: log_age to #{log_days} days"
   STDOUT.flush
+else
+  puts "DEFAULT: log_age to #{log_days} days"
 end
 queues.each do |q|
   rm_logs_older_than(q, "/queue.log.?*", log_days*24)
   mv_logs(q)
   remove_old(q, log_days)
+  remove_old_err(q, log_days)
 end
 
 if File.exist?(basedir + "/queue/relay")
