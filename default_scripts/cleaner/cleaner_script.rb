@@ -76,8 +76,6 @@ def remove_old(qname, days)
   puts "status: processing #{qname}"
   STDOUT.flush
 
-  # TODO: remove stuff in /err that has been acknowledged
-
   clean_queues = ["/done", "/relayed", "/prep", "/queue"]
   clean_queues.each do |cq|
     if File.exist?(qname + cq)
@@ -111,7 +109,7 @@ def remove_old(qname, days)
 end
 
 def remove_old_err(qname, days)
-  puts "status: processing #{qname}"
+  puts "status: processing #{qname}/err"
   STDOUT.flush
 
   clean_queues = ["/err"]
@@ -126,6 +124,10 @@ def remove_old_err(qname, days)
         name = File.basename(x)
         file_date = name.split('.')[1]
         age_days = Date.today - Date.strptime(file_date, "%Y%m%d")
+
+        puts "status: considering #{name} #{file_date} #{age_days}"
+        STDOUT.flush
+
         if age_days >= days + 1
           puts "status: removing " + x
           STDOUT.flush
