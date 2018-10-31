@@ -70,7 +70,11 @@ class Commands
     keys = %w(dest src count max_count param1 param2 param3 param4 due force_remote)
     keys.each do |key|
       next unless args.has_key?(key)
-      mesg[key] = args[key]
+      # TODO: look into why this was happening
+      #p key
+      #p args[key].encoding
+      mesg[key] = args[key].dup.force_encoding("UTF-8")
+      #p args[key].encoding
     end
     result = qc.create_message(mesg)
     print "#{result[0]} #{result[1]}\n"
