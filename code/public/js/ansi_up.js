@@ -1,234 +1,329 @@
-// ansi_up.js
-// author : Dru Nelson
-// license : MIT
-// http://github.com/drudru/ansi_up
-function rgx(tmplObj) {
-    var subst = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        subst[_i - 1] = arguments[_i];
-    }
-    var regexText = tmplObj.raw[0];
-    var wsrgx = /^\s+|\s+\n|\s+#[\s\S]+?\n/gm;
-    var txt2 = regexText.replace(wsrgx, '');
-    return new RegExp(txt2);
-}
-var AnsiUp = (function () {
-    function AnsiUp() {
-        this.VERSION = "2.0.0";
-        this.ansi_colors = [
-            [
-                { rgb: [0, 0, 0], class_name: "ansi-black" },
-                { rgb: [187, 0, 0], class_name: "ansi-red" },
-                { rgb: [0, 187, 0], class_name: "ansi-green" },
-                { rgb: [187, 187, 0], class_name: "ansi-yellow" },
-                { rgb: [0, 0, 187], class_name: "ansi-blue" },
-                { rgb: [187, 0, 187], class_name: "ansi-magenta" },
-                { rgb: [0, 187, 187], class_name: "ansi-cyan" },
-                { rgb: [255, 255, 255], class_name: "ansi-white" }
-            ],
-            [
-                { rgb: [85, 85, 85], class_name: "ansi-bright-black" },
-                { rgb: [255, 85, 85], class_name: "ansi-bright-red" },
-                { rgb: [0, 255, 0], class_name: "ansi-bright-green" },
-                { rgb: [255, 255, 85], class_name: "ansi-bright-yellow" },
-                { rgb: [85, 85, 255], class_name: "ansi-bright-blue" },
-                { rgb: [255, 85, 255], class_name: "ansi-bright-magenta" },
-                { rgb: [85, 255, 255], class_name: "ansi-bright-cyan" },
-                { rgb: [255, 255, 255], class_name: "ansi-bright-white" }
-            ]
-        ];
-        this.setup_256_palette();
+"use strict";
+var PacketKind;
+(function (PacketKind) {
+    PacketKind[PacketKind["EOS"] = 0] = "EOS";
+    PacketKind[PacketKind["Text"] = 1] = "Text";
+    PacketKind[PacketKind["Incomplete"] = 2] = "Incomplete";
+    PacketKind[PacketKind["ESC"] = 3] = "ESC";
+    PacketKind[PacketKind["Unknown"] = 4] = "Unknown";
+    PacketKind[PacketKind["SGR"] = 5] = "SGR";
+    PacketKind[PacketKind["OSCURL"] = 6] = "OSCURL";
+})(PacketKind || (PacketKind = {}));
+class AnsiUp {
+    constructor() {
+        this.VERSION = "4.0.1";
+        this.setup_palettes();
         this._use_classes = false;
-        this.bright = false;
+        this._escape_for_html = true;
+        this.bold = false;
         this.fg = this.bg = null;
-        this._ignore_invalid = true;
+        this._buffer = '';
+        this._url_whitelist = { 'http': 1, 'https': 1 };
     }
-    Object.defineProperty(AnsiUp.prototype, "use_classes", {
-        get: function () {
-            return this._use_classes;
-        },
-        set: function (arg) {
-            this._use_classes = true;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(AnsiUp.prototype, "ignore_invalid", {
-        get: function () {
-            return this._ignore_invalid;
-        },
-        set: function (arg) {
-            this._ignore_invalid = true;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    AnsiUp.prototype.setup_256_palette = function () {
-        var _this = this;
+    set use_classes(arg) {
+        this._use_classes = arg;
+    }
+    get use_classes() {
+        return this._use_classes;
+    }
+    set escape_for_html(arg) {
+        this._escape_for_html = arg;
+    }
+    get escape_for_html() {
+        return this._escape_for_html;
+    }
+    set url_whitelist(arg) {
+        this._url_whitelist = arg;
+    }
+    get url_whitelist() {
+        return this._url_whitelist;
+    }
+    setup_palettes() {
+        this.ansi_colors =
+            [
+                [
+                    { rgb: [0, 0, 0], class_name: "ansi-black" },
+                    { rgb: [187, 0, 0], class_name: "ansi-red" },
+                    { rgb: [0, 187, 0], class_name: "ansi-green" },
+                    { rgb: [187, 187, 0], class_name: "ansi-yellow" },
+                    { rgb: [0, 0, 187], class_name: "ansi-blue" },
+                    { rgb: [187, 0, 187], class_name: "ansi-magenta" },
+                    { rgb: [0, 187, 187], class_name: "ansi-cyan" },
+                    { rgb: [255, 255, 255], class_name: "ansi-white" }
+                ],
+                [
+                    { rgb: [85, 85, 85], class_name: "ansi-bright-black" },
+                    { rgb: [255, 85, 85], class_name: "ansi-bright-red" },
+                    { rgb: [0, 255, 0], class_name: "ansi-bright-green" },
+                    { rgb: [255, 255, 85], class_name: "ansi-bright-yellow" },
+                    { rgb: [85, 85, 255], class_name: "ansi-bright-blue" },
+                    { rgb: [255, 85, 255], class_name: "ansi-bright-magenta" },
+                    { rgb: [85, 255, 255], class_name: "ansi-bright-cyan" },
+                    { rgb: [255, 255, 255], class_name: "ansi-bright-white" }
+                ]
+            ];
         this.palette_256 = [];
-        this.ansi_colors.forEach(function (palette) {
-            palette.forEach(function (rec) {
-                _this.palette_256.push(rec);
+        this.ansi_colors.forEach(palette => {
+            palette.forEach(rec => {
+                this.palette_256.push(rec);
             });
         });
-        var levels = [0, 95, 135, 175, 215, 255];
-        for (var r = 0; r < 6; ++r) {
-            for (var g = 0; g < 6; ++g) {
-                for (var b = 0; b < 6; ++b) {
-                    var c = { rgb: [levels[r], levels[g], levels[b]], class_name: 'truecolor' };
-                    this.palette_256.push(c);
+        let levels = [0, 95, 135, 175, 215, 255];
+        for (let r = 0; r < 6; ++r) {
+            for (let g = 0; g < 6; ++g) {
+                for (let b = 0; b < 6; ++b) {
+                    let col = { rgb: [levels[r], levels[g], levels[b]], class_name: 'truecolor' };
+                    this.palette_256.push(col);
                 }
             }
         }
-        var grey_level = 8;
-        for (var i = 0; i < 24; ++i, grey_level += 10) {
-            var c = { rgb: [grey_level, grey_level, grey_level], class_name: 'truecolor' };
-            this.palette_256.push(c);
+        let grey_level = 8;
+        for (let i = 0; i < 24; ++i, grey_level += 10) {
+            let gry = { rgb: [grey_level, grey_level, grey_level], class_name: 'truecolor' };
+            this.palette_256.push(gry);
         }
-    };
-    AnsiUp.prototype.escape_for_html = function (txt) {
-        return txt.replace(/[&<>]/gm, function (str) {
-            if (str == "&")
+    }
+    escape_txt_for_html(txt) {
+        return txt.replace(/[&<>]/gm, (str) => {
+            if (str === "&")
                 return "&amp;";
-            if (str == "<")
+            if (str === "<")
                 return "&lt;";
-            if (str == ">")
+            if (str === ">")
                 return "&gt;";
         });
-    };
-    AnsiUp.prototype.linkify = function (txt) {
-        return txt.replace(/(https?:\/\/[^\s]+)/gm, function (str) {
-            return "<a href=\"" + str + "\">" + str + "</a>";
-        });
-    };
-    ;
-    AnsiUp.prototype.ansi_to_html = function (pkt) {
-        var _this = this;
-        var raw_text_pktks = pkt.split(/\033\[/);
-        var first_txt = this.wrap_text(raw_text_pktks.shift());
-        var blocks = raw_text_pktks.map(function (block) { return _this.wrap_text(_this.process_ansi(block)); });
-        if (first_txt.length > 0)
-            blocks.unshift(first_txt);
-        return blocks.join('');
-    };
-    AnsiUp.prototype.ansi_to_text = function (txt) {
-        var _this = this;
-        var raw_text_pktks = txt.split(/\033\[/);
-        var first_txt = raw_text_pktks.shift();
-        var blocks = raw_text_pktks.map(function (block) { return _this.process_ansi(block); });
-        if (first_txt.length > 0)
-            blocks.unshift(first_txt);
-        return blocks.join('');
-    };
-    AnsiUp.prototype.wrap_text = function (txt) {
-        if (txt.length == 0)
-            return txt;
-        if (this.fg == null && this.bg == null)
-            return txt;
-        var styles = [];
-        var classes = [];
-        if (this._use_classes == false) {
-            if (this.fg)
-                styles.push("color:rgb(" + this.fg.rgb.join(',') + ")");
-            if (this.bg)
-                styles.push("background-color:rgb(" + this.bg.rgb + ")");
+    }
+    append_buffer(txt) {
+        var str = this._buffer + txt;
+        this._buffer = str;
+    }
+    get_next_packet() {
+        var pkt = {
+            kind: PacketKind.EOS,
+            text: '',
+            url: ''
+        };
+        var len = this._buffer.length;
+        if (len == 0)
+            return pkt;
+        var pos = this._buffer.indexOf("\x1B");
+        if (pos == -1) {
+            pkt.kind = PacketKind.Text;
+            pkt.text = this._buffer;
+            this._buffer = '';
+            return pkt;
         }
-        else {
-            if (this.fg) {
-                if (this.fg.class_name != 'truecolor') {
-                    classes.push(this.fg.class_name + "-fg");
-                }
-                else {
-                    styles.push("color:rgb(" + this.fg.rgb.join(',') + ")");
-                }
+        if (pos > 0) {
+            pkt.kind = PacketKind.Text;
+            pkt.text = this._buffer.slice(0, pos);
+            this._buffer = this._buffer.slice(pos);
+            return pkt;
+        }
+        if (pos == 0) {
+            if (len == 1) {
+                pkt.kind = PacketKind.Incomplete;
+                return pkt;
             }
-            if (this.bg) {
-                if (this.bg.class_name != 'truecolor') {
-                    classes.push(this.bg.class_name + "-bg");
+            var next_char = this._buffer.charAt(1);
+            if ((next_char != '[') && (next_char != ']')) {
+                pkt.kind = PacketKind.ESC;
+                pkt.text = this._buffer.slice(0, 1);
+                this._buffer = this._buffer.slice(1);
+                return pkt;
+            }
+            if (next_char == '[') {
+                if (!this._csi_regex) {
+                    this._csi_regex = rgx `
+                        ^                           # beginning of line
+                                                    #
+                                                    # First attempt
+                        (?:                         # legal sequence
+                          \x1b\[                      # CSI
+                          ([\x3c-\x3f]?)              # private-mode char
+                          ([\d;]*)                    # any digits or semicolons
+                          ([\x20-\x2f]?               # an intermediate modifier
+                          [\x40-\x7e])                # the command
+                        )
+                        |                           # alternate (second attempt)
+                        (?:                         # illegal sequence
+                          \x1b\[                      # CSI
+                          [\x20-\x7e]*                # anything legal
+                          ([\x00-\x1f:])              # anything illegal
+                        )
+                    `;
                 }
-                else {
-                    styles.push("background-color:rgb(" + this.bg.rgb.join(',') + ")");
+                let match = this._buffer.match(this._csi_regex);
+                if (match === null) {
+                    pkt.kind = PacketKind.Incomplete;
+                    return pkt;
                 }
+                if (match[4]) {
+                    pkt.kind = PacketKind.ESC;
+                    pkt.text = this._buffer.slice(0, 1);
+                    this._buffer = this._buffer.slice(1);
+                    return pkt;
+                }
+                if ((match[1] != '') || (match[3] != 'm'))
+                    pkt.kind = PacketKind.Unknown;
+                else
+                    pkt.kind = PacketKind.SGR;
+                pkt.text = match[2];
+                var rpos = match[0].length;
+                this._buffer = this._buffer.slice(rpos);
+                return pkt;
+            }
+            if (next_char == ']') {
+                if ((this._buffer.charAt(2) != '8')
+                    || (this._buffer.charAt(3) != ';')) {
+                    pkt.kind = PacketKind.ESC;
+                    pkt.text = this._buffer.slice(0, 1);
+                    this._buffer = this._buffer.slice(1);
+                    return pkt;
+                }
+                if (!this._osc_st) {
+                    this._osc_st = rgxG `
+                        (?:                         # legal sequence
+                          (\x1b\\)                    # ESC \
+                          |                           # alternate
+                          (\x07)                      # BEL (what xterm did)
+                        )
+                        |                           # alternate (second attempt)
+                        (                           # illegal sequence
+                          [\x00-\x06]                 # anything illegal
+                          |                           # alternate
+                          [\x08-\x1a]                 # anything illegal
+                          |                           # alternate
+                          [\x1c-\x1f]                 # anything illegal
+                        )
+                    `;
+                }
+                this._osc_st.lastIndex = 0;
+                {
+                    let match = this._osc_st.exec(this._buffer);
+                    if (match === null) {
+                        pkt.kind = PacketKind.Incomplete;
+                        return pkt;
+                    }
+                    if (match[3]) {
+                        pkt.kind = PacketKind.ESC;
+                        pkt.text = this._buffer.slice(0, 1);
+                        this._buffer = this._buffer.slice(1);
+                        return pkt;
+                    }
+                }
+                {
+                    let match = this._osc_st.exec(this._buffer);
+                    if (match === null) {
+                        pkt.kind = PacketKind.Incomplete;
+                        return pkt;
+                    }
+                    if (match[3]) {
+                        pkt.kind = PacketKind.ESC;
+                        pkt.text = this._buffer.slice(0, 1);
+                        this._buffer = this._buffer.slice(1);
+                        return pkt;
+                    }
+                }
+                if (!this._osc_regex) {
+                    this._osc_regex = rgx `
+                        ^                           # beginning of line
+                                                    #
+                        \x1b\]8;                    # OSC Hyperlink
+                        [\x20-\x3a\x3c-\x7e]*       # params (excluding ;)
+                        ;                           # end of params
+                        ([\x21-\x7e]{0,512})        # URL capture
+                        (?:                         # ST
+                          (?:\x1b\\)                  # ESC \
+                          |                           # alternate
+                          (?:\x07)                    # BEL (what xterm did)
+                        )
+                        ([\x21-\x7e]+)              # TEXT capture
+                        \x1b\]8;;                   # OSC Hyperlink End
+                        (?:                         # ST
+                          (?:\x1b\\)                  # ESC \
+                          |                           # alternate
+                          (?:\x07)                    # BEL (what xterm did)
+                        )
+                    `;
+                }
+                let match = this._buffer.match(this._osc_regex);
+                if (match === null) {
+                    pkt.kind = PacketKind.ESC;
+                    pkt.text = this._buffer.slice(0, 1);
+                    this._buffer = this._buffer.slice(1);
+                    return pkt;
+                }
+                pkt.kind = PacketKind.OSCURL;
+                pkt.url = match[1];
+                pkt.text = match[2];
+                var rpos = match[0].length;
+                this._buffer = this._buffer.slice(rpos);
+                return pkt;
             }
         }
-        var class_string = '';
-        var style_string = '';
-        if (classes.length)
-            class_string = " class=\"" + classes.join(' ') + "\"";
-        if (styles.length)
-            style_string = " style=\"" + styles.join(';') + "\"";
-        return "<span" + class_string + style_string + ">" + txt + "</span>";
-    };
-    AnsiUp.prototype.process_ansi = function (block) {
-        // This must only be called with a string that started with a CSI (the string split above)
-        // The CSI must not be in the string. We consider this string to be a 'block'.
-        // It has an ANSI command at the front that affects the text that follows it.
-        //
-        // This regex is designed to parse an ANSI terminal CSI command. To be more specific,
-        // we follow the XTERM conventions vs. the various other "standards".
-        // http://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-        //
-        // All ansi codes are typically in the following format. We parse it and focus
-        // specifically on the graphics commands (SGR)
-        //
-        // CONTROL-SEQUENCE-INTRODUCER CSI             (ESC, '[') 
-        // PRIVATE-MODE-CHAR                           (!, <, >, ?)
-        // Numeric parameters separated by semicolons  ('0' - '9', ';')
-        // Intermediate-modifiers                      (0x20 - 0x2f)
-        // COMMAND-CHAR                                (0x40 - 0x7e)
-        // 
-        // We use a regex to parse into capture groups the PRIVATE-MODE-CHAR to the COMMAND
-        // and the following text
-        //
-        if (!this._sgr_regex) {
-            this._sgr_regex = (_a = ["\n              ^                           # beginning of line\n              ([!<-?]?)             # a private-mode char (!, <, =, >, ?)\n              ([d;]*)                    # any digits or semicolons\n              ([ -/]?               # an intermediate modifier\n               [@-~])               # the command\n              ([sS]*)                   # any text following this CSI sequence\n              "], _a.raw = ["\n              ^                           # beginning of line\n              ([!\\x3c-\\x3f]?)             # a private-mode char (!, <, =, >, ?)\n              ([\\d;]*)                    # any digits or semicolons\n              ([\\x20-\\x2f]?               # an intermediate modifier\n               [\\x40-\\x7e])               # the command\n              ([\\s\\S]*)                   # any text following this CSI sequence\n              "], rgx(_a));
-            this._sgr_regex.multiline = true;
+    }
+    ansi_to_html(txt) {
+        this.append_buffer(txt);
+        var blocks = [];
+        while (true) {
+            var packet = this.get_next_packet();
+            if ((packet.kind == PacketKind.EOS)
+                || (packet.kind == PacketKind.Incomplete))
+                break;
+            if ((packet.kind == PacketKind.ESC)
+                || (packet.kind == PacketKind.Unknown))
+                continue;
+            if (packet.kind == PacketKind.Text)
+                blocks.push(this.transform_to_html(this.with_state(packet)));
+            else if (packet.kind == PacketKind.SGR)
+                this.process_ansi(packet);
+            else if (packet.kind == PacketKind.OSCURL)
+                blocks.push(this.process_hyperlink(packet));
         }
-        var matches = block.match(this._sgr_regex);
-        if (!matches) {
-            if (this._ignore_invalid)
-                return block;
-            throw new Error("should never happen");
-        }
-        var orig_txt = matches[4];
-        if (matches[1] !== '' || matches[3] !== 'm')
-            return orig_txt;
-        var sgr_cmds = matches[2].split(';');
+        return blocks.join("");
+    }
+    with_state(pkt) {
+        return { bold: this.bold, fg: this.fg, bg: this.bg, text: pkt.text };
+    }
+    process_ansi(pkt) {
+        let sgr_cmds = pkt.text.split(';');
         while (sgr_cmds.length > 0) {
-            var sgr_cmd_str = sgr_cmds.shift();
-            var num = parseInt(sgr_cmd_str, 10);
+            let sgr_cmd_str = sgr_cmds.shift();
+            let num = parseInt(sgr_cmd_str, 10);
             if (isNaN(num) || num === 0) {
                 this.fg = this.bg = null;
-                this.bright = false;
+                this.bold = false;
             }
             else if (num === 1) {
-                this.bright = true;
+                this.bold = true;
             }
-            else if (num == 39) {
+            else if (num === 22) {
+                this.bold = false;
+            }
+            else if (num === 39) {
                 this.fg = null;
             }
-            else if (num == 49) {
+            else if (num === 49) {
                 this.bg = null;
             }
             else if ((num >= 30) && (num < 38)) {
-                var bidx = this.bright ? 1 : 0;
-                this.fg = this.ansi_colors[bidx][(num - 30)];
-            }
-            else if ((num >= 90) && (num < 98)) {
-                this.fg = this.ansi_colors[1][(num - 90)];
+                this.fg = this.ansi_colors[0][(num - 30)];
             }
             else if ((num >= 40) && (num < 48)) {
                 this.bg = this.ansi_colors[0][(num - 40)];
+            }
+            else if ((num >= 90) && (num < 98)) {
+                this.fg = this.ansi_colors[1][(num - 90)];
             }
             else if ((num >= 100) && (num < 108)) {
                 this.bg = this.ansi_colors[1][(num - 100)];
             }
             else if (num === 38 || num === 48) {
                 if (sgr_cmds.length > 0) {
-                    var is_foreground = (num === 38);
-                    var mode_cmd = sgr_cmds.shift();
+                    let is_foreground = (num === 38);
+                    let mode_cmd = sgr_cmds.shift();
                     if (mode_cmd === '5' && sgr_cmds.length > 0) {
-                        var palette_index = parseInt(sgr_cmds.shift(), 10);
+                        let palette_index = parseInt(sgr_cmds.shift(), 10);
                         if (palette_index >= 0 && palette_index <= 255) {
                             if (is_foreground)
                                 this.fg = this.palette_256[palette_index];
@@ -237,11 +332,11 @@ var AnsiUp = (function () {
                         }
                     }
                     if (mode_cmd === '2' && sgr_cmds.length > 2) {
-                        var r = parseInt(sgr_cmds.shift(), 10);
-                        var g = parseInt(sgr_cmds.shift(), 10);
-                        var b = parseInt(sgr_cmds.shift(), 10);
+                        let r = parseInt(sgr_cmds.shift(), 10);
+                        let g = parseInt(sgr_cmds.shift(), 10);
+                        let b = parseInt(sgr_cmds.shift(), 10);
                         if ((r >= 0 && r <= 255) && (g >= 0 && g <= 255) && (b >= 0 && b <= 255)) {
-                            var c = { rgb: [r, g, b], class_name: 'truecolor' };
+                            let c = { rgb: [r, g, b], class_name: 'truecolor' };
                             if (is_foreground)
                                 this.fg = c;
                             else
@@ -251,10 +346,74 @@ var AnsiUp = (function () {
                 }
             }
         }
-        return orig_txt;
-        var _a;
-    };
-    return AnsiUp;
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = AnsiUp;
+    }
+    transform_to_html(fragment) {
+        let txt = fragment.text;
+        if (txt.length === 0)
+            return txt;
+        if (this._escape_for_html)
+            txt = this.escape_txt_for_html(txt);
+        if (!fragment.bold && fragment.fg === null && fragment.bg === null)
+            return txt;
+        let styles = [];
+        let classes = [];
+        let fg = fragment.fg;
+        let bg = fragment.bg;
+        if (fragment.bold)
+            styles.push('font-weight:bold');
+        if (!this._use_classes) {
+            if (fg)
+                styles.push(`color:rgb(${fg.rgb.join(',')})`);
+            if (bg)
+                styles.push(`background-color:rgb(${bg.rgb})`);
+        }
+        else {
+            if (fg) {
+                if (fg.class_name !== 'truecolor') {
+                    classes.push(`${fg.class_name}-fg`);
+                }
+                else {
+                    styles.push(`color:rgb(${fg.rgb.join(',')})`);
+                }
+            }
+            if (bg) {
+                if (bg.class_name !== 'truecolor') {
+                    classes.push(`${bg.class_name}-bg`);
+                }
+                else {
+                    styles.push(`background-color:rgb(${bg.rgb.join(',')})`);
+                }
+            }
+        }
+        let class_string = '';
+        let style_string = '';
+        if (classes.length)
+            class_string = ` class="${classes.join(' ')}"`;
+        if (styles.length)
+            style_string = ` style="${styles.join(';')}"`;
+        return `<span${style_string}${class_string}>${txt}</span>`;
+    }
+    ;
+    process_hyperlink(pkt) {
+        let parts = pkt.url.split(':');
+        if (parts.length < 1)
+            return '';
+        if (!this._url_whitelist[parts[0]])
+            return '';
+        let result = `<a href="${this.escape_txt_for_html(pkt.url)}">${this.escape_txt_for_html(pkt.text)}</a>`;
+        return result;
+    }
+}
+function rgx(tmplObj, ...subst) {
+    let regexText = tmplObj.raw[0];
+    let wsrgx = /^\s+|\s+\n|\s*#[\s\S]*?\n|\n/gm;
+    let txt2 = regexText.replace(wsrgx, '');
+    return new RegExp(txt2);
+}
+function rgxG(tmplObj, ...subst) {
+    let regexText = tmplObj.raw[0];
+    let wsrgx = /^\s+|\s+\n|\s*#[\s\S]*?\n|\n/gm;
+    let txt2 = regexText.replace(wsrgx, '');
+    return new RegExp(txt2, 'g');
+}
+//# sourceMappingURL=ansi_up.js.map

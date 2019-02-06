@@ -1,3 +1,4 @@
+
   var ansi = new AnsiUp();
 
   var CONTINUE_STATES = ["prep", "que", "run"];
@@ -31,7 +32,7 @@
 
     if (txt.length == 0) return;
 
-    var block = ansi.ansi_to_html(ansi.linkify(ansi.escape_for_html(txt)));
+    var block = ansi.ansi_to_html(txt);
     if (block) {
       // console.log("block: " + block);
       var ansitxt = document.getElementById("ansitxt");
