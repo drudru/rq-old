@@ -10,6 +10,7 @@
 
 require 'fileutils'
 require 'json'
+require 'yaml'
 require 'code/simplepc'
 require 'code/unixsocket'
 require 'code/queueclient'
@@ -186,28 +187,29 @@ module RQ
 
     def scan_dir()
       # Get list of valid timers by scanning directory called 'timers'
-      names = Dir.entries('timers').select do |ent|
-        ent.end_with?('.json') &&
+      paths = Dir.entries('timers').select do |ent|
+          ( ent.end_with?('.json') or ent.end_with?('.yaml') ) &&
           ent.count('.') == 1 &&   # only one period
           File.readable?(File.join('timers', ent)) &&
           File.symlink?(File.join('timers', ent))
       end
 
-      names = names.map { |e| e.split('.')[0] }  # just take the name
 
       # This will replace @timers
       new_timers = {}
 
-      names.each {
-        |name|
+      paths.each {
+        |pathname|
+
+        name = pathname.split('.')[0]   # just take the name
 
         timer_rec = @timers[name]
         if timer_rec
-          stat = File.stat("timers/#{name}.json") rescue nil
+          stat = File.stat("timers/#{pathname}") rescue nil
           if timer_rec.config_stat == stat
             new_timers[name] = timer_rec
           else
-            config = get_config(name)
+            config = get_config(pathname, name)
             if config
               timer_rec.config = config
               timer_rec.due = @now
@@ -225,7 +227,7 @@ module RQ
         else
           timer_rec = TimerRecord.new
 
-          config = get_config(name)
+          config = get_config(pathname, name)
           if config
             timer_rec.name = name
             timer_rec.config = config
@@ -290,7 +292,7 @@ module RQ
       rdy.each { |k,trec| trec.due += trec.config['period'] }
     end
 
-    def get_config(name)
+    def get_config(pathname, name)
       # Defaults
       #
       # A config has the following fields:
@@ -299,47 +301,52 @@ module RQ
       #
       queue_config = {}
 
-      if not File.exist? "timers/#{name}.json"
+      if not File.exist? "timers/#{pathname}"
         return nil
       end
 
-      json = File.read("timers/#{name}.json") rescue nil
+      str = File.read("timers/#{pathname}") rescue nil
 
-      if json.nil?
-        $log.warn("cannot read timers/#{name}.json")
+      if str.nil?
+        $log.warn("cannot read timers/#{pathname}")
         return nil
       end
 
-      obj = JSON.parse(json) rescue nil
+      if pathname.end_with?('.json')
+          obj = JSON.parse(str) rescue nil
+      else  # yaml
+          obj = YAML.load(str) rescue nil
+      end
+
 
       if obj.nil?
-        $log.warn("invalid json in timers/#{name}.json")
+        $log.warn("invalid parse of timers/#{pathname}")
         return nil
       end
 
       config = obj
 
       if not config.has_key?('period')
-        $log.warn("missing 'period' field in timers/#{name}.json")
+        $log.warn("missing 'period' field in timers/#{pathname}")
         return nil
       end
 
       if config['period'].class != Fixnum
-        $log.warn("invalid 'period' field in timers/#{name}.json")
+        $log.warn("invalid 'period' field in timers/#{pathname}")
         return nil
       end
       if config['period'] < 60
-        $log.warn("'period' field too small in timers/#{name}.json")
+        $log.warn("'period' field too small in timers/#{pathname}")
         return nil
       end
 
       if not config.has_key?('msg')
-        $log.warn("missing 'msg' field in timers/#{name}.json")
+        $log.warn("missing 'msg' field in timers/#{pathname}")
         return nil
       end
 
       if not config['msg'].has_key?('dest')
-        $log.warn("missing 'msg.dest' field in timers/#{name}.json")
+        $log.warn("missing 'msg.dest' field in timers/#{pathname}")
         return nil
       end
 
