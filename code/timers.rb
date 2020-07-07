@@ -70,8 +70,6 @@ module RQ
 
       @unixsock = RQUNIXSocket.start_server('timers/sock')
 
-      poll_time = 60
-
       reqs = {}
 
       while true
@@ -197,6 +195,7 @@ module RQ
 
       # This will replace @timers
       new_timers = {}
+      start_time = @now
 
       paths.each {
         |pathname|
@@ -212,7 +211,7 @@ module RQ
             config = get_config(pathname, name)
             if config
               timer_rec.config = config
-              timer_rec.due = @now
+              timer_rec.due = start_time
               timer_rec.config_stat = stat
               new_timers[name] = timer_rec
             else
@@ -231,11 +230,14 @@ module RQ
           if config
             timer_rec.name = name
             timer_rec.config = config
-            timer_rec.due = @now
+            timer_rec.due = start_time
             timer_rec.config_stat = stat
             new_timers[name] = timer_rec
           end
         end
+
+        # Give each timer a staggered start
+        start_time = start_time + 2
       }
 
       # Old timers don't need to have any action performed
