@@ -83,7 +83,7 @@ elsif not timers.empty?
     </tr>
   </thead>
   <tbody style="background: #FEF9EE">
-<%  timers.each_with_index do |timer, i| %>
+  <%  timers.sort_by { |t| t[1] }.each_with_index do |timer, i| %>
     <tr class="<%= 'odd-row' if i.odd? %>">
       <td class="left-aligned"><%= timer[0] %></td>
       <td><%= timer[1] - now %></td>
