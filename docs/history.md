@@ -10,7 +10,7 @@ Also, if you were on the internet in the 80s or 90s, you will see that this
 system bears some resemblance to the UUCP system deployed back then. It was
 definitely an inspiration for the design of this system.
 
-## Large Dost of Philosophy
+## Large Dose of Philosophy
 
 When working in distributed systems, you will eventually learn that the system is never 100% available. Yet,
 most developers tend to program as if the system is always available.
