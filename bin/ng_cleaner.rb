@@ -37,7 +37,7 @@
 require 'getoptlong'
 require 'fileutils'
 require 'rdoc/usage'
-@@rqpath = "/rq/current/queue.noindex/"
+@@rqpath = "/rq/current/queue/"
 
 
 def getargs

@@ -107,8 +107,9 @@ drawbacks to ruby were:
   Now I do my development of RQ via ssh to a VirtualBOX Ubuntu instance.
 - We ran into the GLIBC issue where DNS would no longer round-robin.
 
-Yet, even with these drawbacks, the overall architecture proved to work pretty well. The forking model hides
-most of the issues that someone would run into with.
+Yet, even with these drawbacks, the overall architecture proved to work pretty well.
+The forking model helps maintain good 'repeatability' and isolation.
+This is exactly what made Docker successfull as well.
 
 ## Future
 

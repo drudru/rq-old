@@ -27,19 +27,9 @@ end
 
 def create_queues
 
-  # Create main queue directory
-  # After watching my mds process go nuts
-  # http://support.apple.com/kb/TA24975?viewlocale=en_US
-  FileUtils.mkdir_p('.queue.noindex')
-  FileUtils.ln_sf('.queue.noindex', 'queue') unless File.symlink?('queue')
-
-  # Create scandir directory
-  FileUtils.mkdir_p('.scandir.noindex')
-  FileUtils.ln_sf('.scandir.noindex', 'scandir') unless File.symlink?('scandir')
-
-  # Create scandir directory
-  FileUtils.mkdir_p('.timers.noindex')
-  FileUtils.ln_sf('.timers.noindex', 'timers') unless File.symlink?('timers')
+  FileUtils.mkdir_p('queue')
+  FileUtils.mkdir_p('scandir')
+  FileUtils.mkdir_p('timers')
 
   link_queue('relay')
   link_queue('debug')
