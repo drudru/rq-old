@@ -323,9 +323,11 @@ form.inrow button {
   width: 5em;
 }
 
+/*
 #queue-lists {
   table-layout: fixed;
 }
+*/
 
 #queue-lists td, #queue-lists th {
   padding: 5px;
