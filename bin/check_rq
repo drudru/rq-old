@@ -7,10 +7,12 @@ require 'pp'
 @server = "localhost"
 @port = (ENV['RQ_PORT'] || 3333).to_i
 
-# thresh [WARNING, CRITICAL, WARNING MAX, CRITICAL MAX, RELAYED WARN, RELAYED MAX]
-thresh = [25, 40, 2000, 2500, 3000, 3500]
+#         ######<-Prep/Que/Run WARN..CRITICAL
+#         |    |  ##########<-Done/Relayed WARN..CRITICAL
+#         |    |  |        |
+thresh = [25, 40, 3000, 3500]
 mesg = "OK: RQ is clean"
-rq_errors = {}
+rq_errors = Hash.new { "" }
 qinfo = {}
 exitcode = 0
 dump = 0
@@ -89,46 +91,27 @@ qinfo.keys.each do |q|
   if qinfo[q]["status"] != "UP"
     rq_errors[q] = "status #{qinfo[q]['status']}"
     exitcode = 2
-  end
-  if (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[1]
+  elsif (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[1]
     rq_errors[q] = "%s: prep=>%s run=>%s que=>%s", q, qinfo[q]["prep"], qinfo[q]["run"], qinfo[q]["que"]
     exitcode = 2
-  end
-  if (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[0]
+  elsif (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[0]
     rq_errors[q] = "prep=>#{qinfo[q]['prep']} run=>#{qinfo[q]['run']} que=>#{qinfo[q]['que']}"
-     if exitcode < 2
-       exitcode = 1
-     end
+    exitcode = 1
   end
+
   if qinfo[q]["err"].to_i > 0
-    if rq_errors.has_key? q
-      rq_errors[q] += " errors => #{qinfo[q]['err'].to_s}"
-    else
-      rq_errors[q] = "errors => #{qinfo[q]['err'].to_s}"
-    end
+    rq_errors[q] += " errors => #{qinfo[q]['err'].to_s}"
     exitcode = 2
   end
 
   ["done", "relayed"].each do |k|
-    if qinfo[q][k].to_i >= thresh[5]
-      if rq_errors.has_key? q
-        rq_errors[q] += " #{k} => #{qinfo[q][k]}"
-      else
-        rq_errors[q] = "#{k} => #{qinfo[q][k]}"
-        exitcode = 2
+      if qinfo[q][k].to_i >= thresh[3]
+          rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+          exitcode = 2
+      elsif qinfo[q][k].to_i >= thresh[2]
+          rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+          exitcode = 1
       end
-      exitcode = 2
-    elsif qinfo[q][k].to_i >= thresh[4]
-      if rq_errors.has_key? q
-        rq_errors[q] += " #{k} => #{qinfo[q][k]}"
-      else
-        rq_errors[q] = "#{k} => #{qinfo[q][k]}"
-        exitcode = 2
-      end
-      if exitcode < 2
-        exitcode = 1
-      end
-    end
   end
 
 end
