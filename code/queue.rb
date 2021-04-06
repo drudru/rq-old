@@ -1074,6 +1074,7 @@ module RQ
           msg['due'] = Time.now.to_i + due.to_i
           msg['count'] = msg.fetch('count', 0) + 1
           store_msg(msg, 'run')
+          FileUtils.touch(File.join(@queue_path, 'run', msg['msg_id'], 'resend'))
           # *** THIS ONE IS DIFFERENT ***
           # We need to set the messages 'due' time. This is safe
           # since we are in the run queue, and we want to record
