@@ -11,7 +11,7 @@
 
 <div class="field" id="mesg_dest_field" <%= overrides.show_field('mesg_dest') ? '' : "style=\"display: none;\"" %>>
   <label class="field_label" for="mesg_dest">Destination Queue</label>
-  <input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{root}q/#{q_name}" %>" />
+  <input type="text" size="80" name="mesg[dest]" id="mesg_dest" value="<%= "#{root}q/#{q_name}" %>" />
 </div>
 
 <div class="field" id="mesg_src_field" <%= overrides.show_field('mesg_src') ? '' : "style=\"display: none;\"" %>>
@@ -63,7 +63,7 @@
 
 <div class="field" id="mesg_post_run_webhook_field" <%= overrides.show_field('mesg_post_run_webhook') ? '' : "style=\"display: none;\"" %>>
   <label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
-  <input type="text" name="mesg[post_run_webhook]" value="" size="100" />
+  <input type="text" name="mesg[post_run_webhook]" value="" size="80" />
   <p class="note">URL to receive webhook POST after a message transitions from 'run' state</p>
 </div>
 
