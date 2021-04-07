@@ -1,3 +1,4 @@
+<div style="float: right">
         <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/adminoper" %>">
           <input type="hidden" name="back" value="<%= request.path  %>" />
           <%- if status == 'PAUSE' -%>
@@ -19,3 +20,7 @@
           <input type="hidden" name="back" value="<%= request.path  %>" />
           <button id="ack-errs-queue" name="ack_errs" value="ack_errs" style="width: 7em">Ack Errors</button>
         </form>
+        <form class="inline inrow" method="get" action="<%= "#{root}q/#{name}" %>">
+          <input type="text" name="filter" placeholder="Search..." value="" width="40" />
+        </form>
+</div>

@@ -1591,17 +1591,30 @@ module RQ
         return
 
       when 'messages'
+        # This message is sent from the web UI
+        # The state and limit are pretty much mandatory
+        # 'filter' is optional
+        limit = options['limit'] || 20
+        if options['filter'] and options['filter'].strip.empty?
+            options.delete('filter')
+        end
         case options['state']
         when 'prep'
-          status = (options['limit'] ? @prep.take(options['limit']) : @prep)
+          status = @prep.take(limit)
         when 'que'
-          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| [m['msg_id'], m['due']] }
+          status = @que.take(limit).map { |m| [m['msg_id'], m['due']] }
         when 'run'
-          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| [m['msg_id'], m['status']] }
+          status = @run.take(limit).map { |m| [m['msg_id'], m['status']] }
         when 'done'
-          status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/done", limit)
+          if options['filter']
+              status = status.select { |msg_id|
+                  m = get_message({ 'msg_id' => msg_id }, 'done', {:read_message => true})
+                  m.to_json.include? options['filter']
+              }
+          end
         when 'relayed'
-          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/relayed/", limit)
         when 'err'
           status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
         when 'errack'

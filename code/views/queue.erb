@@ -4,20 +4,25 @@
 </div>
 
 <div id="sub-header">
-  <% if qc.running? %>
-  <% status = qc.status %>
   <div id="queue-status">
-    <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
-    <span class=""> <%=  qc.ping %></span>
-    <span class=""> <%=  qc.read_pid %></span>
-    running for <%= qc.uptime %> seconds
-<%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
-  <% else %>
-   Status: <span class="red">queue is COMPLETELY DOWN</span>
-  <% end %>
+    <% if qc.running? %>
+      <% status = qc.status %>
+      <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
+      <span class=""> <%  qc.ping %></span>
+      <span class="">pid: <%=  qc.read_pid %> </span>
+      uptime: <%= qc.uptime %> seconds
+      <%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
+    <% else %>
+     Status: <span class="red">queue is COMPLETELY DOWN</span>
+    <% end %>
   </div>
-  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{root}q/#{qc.name}/config.json" %>">raw</a> ]</p>
-  <pre id="config" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
+  <div id="sub-config">
+  <span id="json-config">config.json [<a href="#" onclick="show_toggle()">show/hide</a>|<a href="<%= "#{root}q/#{qc.name}/config.json" %>">raw</a>]</span>
+  <% if params[:filter] and not params[:filter].strip.empty? %>
+      <span>Search: <%= params[:filter] %></span> <a href="<%= "#{root}q/#{qc.name}" %>">[X]</a>
+  <% end %>
+  <pre id="config" style="background-color: white" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
+  </div>
 </div>
 
 <% if status != 'DOWN' %>
@@ -133,7 +138,7 @@
       <% if qc.name != 'relay' %>
       <!-- DONE -->
       <td class="done">
-<% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
+<% msgs = qc.messages({'state' => 'done', 'limit' => 50, 'filter' => params[:filter]}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
   <% date, rest = msg.split('.', 2) %>
